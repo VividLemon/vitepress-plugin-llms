@@ -78,14 +78,14 @@
 		"dedent": "^1.7.2",
 		"eslint-plugin-perfectionist": "^5.9.0",
 		"husky": "^9.1.7",
-		"lint-staged": "^16.4.0",
+		"nano-staged": "^1.0.2",
 		"oxfmt": "^0.46.0",
 		"oxlint": "1.61.0",
 		"oxlint-tsgolint": "^0.22.0",
 		"vitepress": "1.4.1"
 	},
 	"engines": {
-		"node": ">=18.0.0"
+		"node": ">=18"
 	},
 	"patchedDependencies": {
 		"mdast-util-to-markdown@2.1.2": "patches/mdast-util-to-markdown@2.1.2.patch"

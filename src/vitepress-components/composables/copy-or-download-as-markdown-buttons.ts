@@ -2,6 +2,8 @@ import { onMounted, ref, type Ref } from 'vue'
 
 import { downloadFile, resolveMarkdownPageURL } from '../utils'
 
+type MarkdownAiProviders = readonly MarkdownAiProvider[]
+
 /**
  * Represents an AI provider that can open the current page as Markdown.
  */
@@ -15,31 +17,6 @@ export interface MarkdownAiProvider {
 	 * @example 'https://claude.ai/new?q='
 	 */
 	readonly url: string
-}
-
-/**
- * Options for {@link useCopyOrDownloadAsMarkdownButtons}.
- */
-interface UseCopyOrDownloadAsMarkdownButtonsOptions {
-	/**
-	 * List of AI providers shown in the dropdown.
-	 * Defaults to {@link defaultAiProviders}.
-	 */
-	readonly aiProviders?: readonly MarkdownAiProvider[]
-	/**
-	 * Duration in milliseconds for which the `copied` / `downloaded`
-	 * state remains `true` after a successful action.
-	 *
-	 * @default 2000
-	 */
-	readonly animationDuration?: number
-	/**
-	 * Override the current page URL used to derive the Markdown file URL.
-	 * When omitted, `window.location.origin + window.location.pathname` is used.
-	 *
-	 * Useful in tests or non-browser environments.
-	 */
-	readonly currentURL?: string
 }
 
 const defaultAnimationDuration = 2000
@@ -66,56 +43,44 @@ export const defaultAiProviders = [
 	{ name: 'Claude', url: 'https://claude.ai/new?q=' },
 ] as const satisfies readonly MarkdownAiProvider[]
 
-const fetchMarkdown = async (markdownPageURL: string): Promise<string> => {
-	const response = await fetch(markdownPageURL)
-	return response.text()
-}
+type ResolvedMarkdownAiProviders<Providers extends MarkdownAiProviders | undefined> =
+	Providers extends MarkdownAiProviders ? Providers : typeof defaultAiProviders
 
-const resolveMarkdownFilename = (markdownPageURL: string): string =>
-	markdownPageURL.split('/').pop() ?? 'page.md'
-
-// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
-const scheduleReset = (state: Ref<boolean>, animationDuration: number): void => {
-	setTimeout(() => {
-		state.value = false
-	}, animationDuration)
+/**
+ * Options for {@link useCopyOrDownloadAsMarkdownButtons}.
+ */
+export interface UseCopyOrDownloadAsMarkdownButtonsOptions<
+	Providers extends MarkdownAiProviders | undefined = undefined,
+> {
+	/**
+	 * List of AI providers shown in the dropdown.
+	 * Defaults to {@link defaultAiProviders}.
+	 */
+	readonly aiProviders?: Providers
+	/**
+	 * Duration in milliseconds for which the `copied` / `downloaded`
+	 * state remains `true` after a successful action.
+	 *
+	 * @default 2000
+	 */
+	readonly animationDuration?: number
+	/**
+	 * Override the current page URL used to derive the Markdown file URL.
+	 * When omitted, `window.location.origin + window.location.pathname` is used.
+	 *
+	 * Useful in tests or non-browser environments.
+	 */
+	readonly currentURL?: string
 }
 
 /**
- * Composable that exposes the core logic of the "Copy / Download as Markdown"
- * button group, so you can build a completely custom UI on top of it.
- *
- * @param options - Optional configuration. See {@link UseCopyOrDownloadAsMarkdownButtonsOptions}.
- * @returns Reactive state and action handlers.
- *
- * @example Basic usage — copy button with feedback
- * ```vue
- * <script setup lang="ts">
- * import { useCopyOrDownloadAsMarkdownButtons } from 'vitepress-plugin-llms'
- *
- * const { copied, copyAsMarkdown } = useCopyOrDownloadAsMarkdownButtons()
- * </script>
- *
- * <template>
- *   <button @click="copyAsMarkdown">
- *     {{ copied ? 'Copied!' : 'Copy as Markdown' }}
- *   </button>
- * </template>
- * ```
- *
- * @example Custom AI providers
- * ```ts
- * const { openInAI } = useCopyOrDownloadAsMarkdownButtons({
- *   aiProviders: [
- *     { name: 'Gemini', url: 'https://gemini.google.com/app?q=' },
- *   ],
- * })
- * ```
+ * Return type of {@link useCopyOrDownloadAsMarkdownButtons}.
  */
-// oxlint-disable-next-line max-statements max-lines-per-function
-export function useCopyOrDownloadAsMarkdownButtons(options: UseCopyOrDownloadAsMarkdownButtonsOptions = {}): {
+export interface UseCopyOrDownloadAsMarkdownButtonsReturn<
+	Providers extends MarkdownAiProviders = typeof defaultAiProviders,
+> {
 	/** List of AI providers passed via options, or {@link defaultAiProviders} if not specified. */
-	aiProviders: readonly MarkdownAiProvider[]
+	aiProviders: Providers
 	/** `true` for {@link UseCopyOrDownloadAsMarkdownButtonsOptions.animationDuration} ms after {@link copyAsMarkdown} succeeds. */
 	copied: Ref<boolean>
 	/** `true` for {@link UseCopyOrDownloadAsMarkdownButtonsOptions.animationDuration} ms after {@link downloadMarkdown} succeeds. */
@@ -142,9 +107,63 @@ export function useCopyOrDownloadAsMarkdownButtons(options: UseCopyOrDownloadAsM
 	 *
 	 * @param provider - One of the entries from {@link aiProviders}.
 	 */
-	openInAI: (provider: MarkdownAiProvider) => void
-} {
-	const aiProviders = options.aiProviders ?? defaultAiProviders
+	openInAI: (provider: Providers[number]) => void
+}
+
+const fetchMarkdown = async (markdownPageURL: string): Promise<string> => {
+	const response = await fetch(markdownPageURL)
+	return response.text()
+}
+
+const resolveMarkdownFilename = (markdownPageURL: string): string =>
+	markdownPageURL.split('/').pop() ?? 'page.md'
+
+// oxlint-disable-next-line typescript/prefer-readonly-parameter-types
+const scheduleReset = (state: Ref<boolean>, animationDuration: number): void => {
+	setTimeout(() => {
+		state.value = false
+	}, animationDuration)
+}
+
+/**
+ * Composable that exposes the core logic of the "Copy / Download as Markdown"
+ * button group, so you can build a completely custom UI on top of it.
+ *
+ * @param options - Optional configuration. See {@link UseCopyOrDownloadAsMarkdownButtonsOptions}.
+ * @returns Reactive state and action handlers typed as {@link UseCopyOrDownloadAsMarkdownButtonsReturn}.
+ *
+ * @example Basic usage — copy button with feedback
+ * ```vue
+ * <script setup lang="ts">
+ * import { useCopyOrDownloadAsMarkdownButtons } from 'vitepress-plugin-llms'
+ *
+ * const { copied, copyAsMarkdown } = useCopyOrDownloadAsMarkdownButtons()
+ * </script>
+ *
+ * <template>
+ *   <button @click="copyAsMarkdown">
+ *     {{ copied ? 'Copied!' : 'Copy as Markdown' }}
+ *   </button>
+ * </template>
+ * ```
+ *
+ * @example Custom AI providers
+ * ```ts
+ * const { openInAI } = useCopyOrDownloadAsMarkdownButtons({
+ *   aiProviders: [
+ *     { name: 'Gemini', url: 'https://gemini.google.com/app?q=' },
+ *   ],
+ * })
+ * ```
+ */
+// oxlint-disable-next-line max-statements max-lines-per-function
+export function useCopyOrDownloadAsMarkdownButtons<
+	const Providers extends MarkdownAiProviders | undefined = undefined,
+>(
+	options: UseCopyOrDownloadAsMarkdownButtonsOptions<Providers> = {},
+): UseCopyOrDownloadAsMarkdownButtonsReturn<ResolvedMarkdownAiProviders<Providers>> {
+	// oxlint-disable-next-line typescript-eslint/no-unsafe-type-assertion
+	const aiProviders = (options.aiProviders ?? defaultAiProviders) as ResolvedMarkdownAiProviders<Providers>
 	const animationDuration = options.animationDuration ?? defaultAnimationDuration
 
 	const copied = ref(false)
@@ -184,7 +203,7 @@ export function useCopyOrDownloadAsMarkdownButtons(options: UseCopyOrDownloadAsM
 		window.open(markdownPageURL.value, '_blank')
 	}
 
-	function openInAI(provider: MarkdownAiProvider): void {
+	function openInAI(provider: ResolvedMarkdownAiProviders<Providers>[number]): void {
 		const prompt = `Read from ${markdownPageURL.value} so I can ask questions about it.`
 		window.open(provider.url + encodeURIComponent(prompt), '_blank')
 	}

@@ -178,37 +178,27 @@ export function useCopyOrDownloadAsMarkdownButtons<
 	})
 
 	async function copyAsMarkdown(): Promise<void> {
-		let shouldReset = false
-
 		try {
 			const text = await fetchMarkdown(markdownPageURL.value)
 			await navigator.clipboard.writeText(text)
 			copied.value = true
-			shouldReset = true
 		} catch (error) {
 			console.error('❌ Error:', error)
 		} finally {
-			if (shouldReset) {
-				scheduleReset(copied, animationDuration)
-			}
+			scheduleReset(copied, animationDuration)
 		}
 	}
 
 	async function downloadMarkdown(): Promise<void> {
-		let shouldReset = false
-
 		try {
 			const text = await fetchMarkdown(markdownPageURL.value)
 			const filename = resolveMarkdownFilename(markdownPageURL.value)
 			downloadFile(filename, text, 'text/markdown')
 			downloaded.value = true
-			shouldReset = true
 		} catch (error) {
 			console.error('❌ Error:', error)
 		} finally {
-			if (shouldReset) {
-				scheduleReset(downloaded, animationDuration)
-			}
+			scheduleReset(downloaded, animationDuration)
 		}
 	}
 

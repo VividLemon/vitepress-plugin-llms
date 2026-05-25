@@ -1,3 +1,5 @@
+import type { Ref } from 'vue'
+
 import { describe, expect, it } from 'bun:test'
 
 import {
@@ -29,6 +31,8 @@ type DefaultAiProviders = ReturnType<typeof useDefaultButtons>['aiProviders']
 type CustomAiProviders = ReturnType<typeof useCustomButtons>['aiProviders']
 type DynamicOpenInAIProvider = Parameters<ReturnType<typeof useDynamicButtons>['openInAI']>[0]
 type CustomOpenInAIProvider = Parameters<ReturnType<typeof useCustomButtons>['openInAI']>[0]
+type CustomCurrentURL = ReturnType<typeof useCustomButtons>['currentURL']
+type CustomMarkdownPageURL = ReturnType<typeof useCustomButtons>['markdownPageURL']
 type ExportedCustomOptions = UseCopyOrDownloadAsMarkdownButtonsOptions<typeof customAiProviders>
 type ExportedCustomReturn = UseCopyOrDownloadAsMarkdownButtonsReturn<typeof customAiProviders>
 
@@ -44,8 +48,12 @@ const compileTimeAssertions = {
 	exportedOptionsKeepCustomProviders: true as Assert<
 		IsEqual<NonNullable<ExportedCustomOptions['aiProviders']>, typeof customAiProviders>
 	>,
+	exportedReturnExposesReadonlyCurrentURL: true as Assert<IsEqual<CustomCurrentURL, Readonly<Ref<string>>>>,
+	exportedReturnExposesReadonlyMarkdownPageURL: true as Assert<
+		IsEqual<CustomMarkdownPageURL, Readonly<Ref<string>>>
+	>,
 	exportedReturnKeepsCustomOpenInAIProvider: true as Assert<
-		IsEqual<Parameters<ExportedCustomReturn['openInAI']>[0], (typeof customAiProviders)[number]>
+		IsEqual<Parameters<ExportedCustomReturn['openInAI']>[0], Readonly<(typeof customAiProviders)[number]>>
 	>,
 }
 
@@ -56,6 +64,8 @@ describe('copy-or-download-as-markdown-buttons typings', () => {
 		expect(compileTimeAssertions.customOpenInAIProviderMatchesInput).toBeTrue()
 		expect(compileTimeAssertions.dynamicOpenInAIProviderFallsBackToBaseType).toBeTrue()
 		expect(compileTimeAssertions.exportedOptionsKeepCustomProviders).toBeTrue()
+		expect(compileTimeAssertions.exportedReturnExposesReadonlyCurrentURL).toBeTrue()
+		expect(compileTimeAssertions.exportedReturnExposesReadonlyMarkdownPageURL).toBeTrue()
 		expect(compileTimeAssertions.exportedReturnKeepsCustomOpenInAIProvider).toBeTrue()
 		expect(customAiProviders).toHaveLength(2)
 		expect(dynamicAiProviders).toHaveLength(1)

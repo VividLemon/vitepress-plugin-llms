@@ -89,12 +89,12 @@ export interface UseCopyOrDownloadAsMarkdownButtonsReturn<
 	 * The resolved URL of the current page.
 	 * Empty string during SSR; populated in `onMounted`.
 	 */
-	currentURL: Ref<string>
+	currentURL: Readonly<Ref<string>>
 	/**
 	 * The resolved URL of the `.md` source file for the current page.
 	 * Empty string during SSR; populated in `onMounted`.
 	 */
-	markdownPageURL: Ref<string>
+	markdownPageURL: Readonly<Ref<string>>
 	/** Fetches the page Markdown and writes it to the clipboard. */
 	copyAsMarkdown: () => Promise<void>
 	/** Fetches the page Markdown and triggers a file download. */
@@ -107,7 +107,7 @@ export interface UseCopyOrDownloadAsMarkdownButtonsReturn<
 	 *
 	 * @param provider - One of the entries from {@link aiProviders}.
 	 */
-	openInAI: (provider: Providers[number]) => void
+	openInAI: (provider: Readonly<Providers[number]>) => void
 }
 
 const fetchMarkdown = async (markdownPageURL: string): Promise<string> => {

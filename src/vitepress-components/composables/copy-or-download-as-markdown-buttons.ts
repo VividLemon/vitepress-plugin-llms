@@ -60,6 +60,7 @@ export interface UseCopyOrDownloadAsMarkdownButtonsOptions<
 	/**
 	 * Duration in milliseconds for which the `copied` / `downloaded`
 	 * state remains `true` after a successful action.
+	 * Reset scheduling uses this configured value when the composable is created.
 	 *
 	 * @default 2000
 	 */
@@ -81,9 +82,9 @@ export interface UseCopyOrDownloadAsMarkdownButtonsReturn<
 > {
 	/** List of AI providers passed via options, or {@link defaultAiProviders} if not specified. */
 	aiProviders: Providers
-	/** `true` for {@link UseCopyOrDownloadAsMarkdownButtonsOptions.animationDuration} ms after {@link copyAsMarkdown} succeeds. */
+	/** `true` for {@link UseCopyOrDownloadAsMarkdownButtonsOptions.animationDuration} ms after {@link copyAsMarkdown} succeeds, then reset using that configured duration. */
 	copied: Ref<boolean>
-	/** `true` for {@link UseCopyOrDownloadAsMarkdownButtonsOptions.animationDuration} ms after {@link downloadMarkdown} succeeds. */
+	/** `true` for {@link UseCopyOrDownloadAsMarkdownButtonsOptions.animationDuration} ms after {@link downloadMarkdown} succeeds, then reset using that configured duration. */
 	downloaded: Ref<boolean>
 	/**
 	 * The resolved URL of the current page.
@@ -177,25 +178,37 @@ export function useCopyOrDownloadAsMarkdownButtons<
 	})
 
 	async function copyAsMarkdown(): Promise<void> {
+		let shouldReset = false
+
 		try {
 			const text = await fetchMarkdown(markdownPageURL.value)
 			await navigator.clipboard.writeText(text)
 			copied.value = true
-			scheduleReset(copied, animationDuration)
+			shouldReset = true
 		} catch (error) {
 			console.error('❌ Error:', error)
+		} finally {
+			if (shouldReset) {
+				scheduleReset(copied, animationDuration)
+			}
 		}
 	}
 
 	async function downloadMarkdown(): Promise<void> {
+		let shouldReset = false
+
 		try {
 			const text = await fetchMarkdown(markdownPageURL.value)
 			const filename = resolveMarkdownFilename(markdownPageURL.value)
 			downloadFile(filename, text, 'text/markdown')
 			downloaded.value = true
-			scheduleReset(downloaded, animationDuration)
+			shouldReset = true
 		} catch (error) {
 			console.error('❌ Error:', error)
+		} finally {
+			if (shouldReset) {
+				scheduleReset(downloaded, animationDuration)
+			}
 		}
 	}
 
